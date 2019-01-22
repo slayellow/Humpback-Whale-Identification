@@ -10,12 +10,10 @@ import os
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import OneHotEncoder
-from keras.callbacks import ModelCheckpoint, Callback, EarlyStopping
+from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.preprocessing import image
 from keras.applications.imagenet_utils import preprocess_input
-from alexnet import Alexnet
-from VGG import VGG
-
+from imageclassifier.Resnet import Resnet
 
 
 def prepareImages(data, m, dataset):
@@ -90,7 +88,8 @@ def main():
     file_path = ".model_weight.hdf5"
     callbacks = get_callbacks(file_path, patience=5)
     #model = Alexnet(input_shape=(224,224,3), num_classes=y.shape[1])
-    model = VGG('E', input_shape=(224,224,3), num_classes=y.shape[1])
+    #model = VGG('E', input_shape=(224,224,3), num_classes=y.shape[1])
+    model = Resnet(input_shape=(224,224,3), num_classes=y.shape[1])
     gmodel = model.model
 
 
