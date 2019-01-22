@@ -14,6 +14,8 @@ from keras.callbacks import ModelCheckpoint, Callback, EarlyStopping
 from keras.preprocessing import image
 from keras.applications.imagenet_utils import preprocess_input
 from alexnet import Alexnet
+from VGG import VGG
+
 
 
 def prepareImages(data, m, dataset):
@@ -69,7 +71,7 @@ def batch_generator(X, y, batch_size=16):
 
 def main():
     # input폴더 안의 파일들 확인
-    # print(os.listdir('../input')
+    # print(os.listdir('../input'))
     # 이미지 폴더와 csv파일 변수로 저장
     # img_train_path = os.path.abspath('../input/train')
     # img_test_path = os.path.abspath('../input/test')
@@ -87,7 +89,8 @@ def main():
 
     file_path = ".model_weight.hdf5"
     callbacks = get_callbacks(file_path, patience=5)
-    model = Alexnet(input_shape=(224,224,3), num_classes=y.shape[1])
+    #model = Alexnet(input_shape=(224,224,3), num_classes=y.shape[1])
+    model = VGG('E', input_shape=(224,224,3), num_classes=y.shape[1])
     gmodel = model.model
 
 
