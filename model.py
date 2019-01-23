@@ -14,7 +14,7 @@ from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.preprocessing import image
 from keras.applications.imagenet_utils import preprocess_input
 from imageclassifier.Resnet import Resnet
-
+from imageclassifier.SENet import SE_Resnet
 
 def prepareImages(data, m, dataset):
     X_train = np.zeros((m, 224, 224, 3))
@@ -89,7 +89,8 @@ def main():
     callbacks = get_callbacks(file_path, patience=5)
     #model = Alexnet(input_shape=(224,224,3), num_classes=y.shape[1])
     #model = VGG('E', input_shape=(224,224,3), num_classes=y.shape[1])
-    model = Resnet(input_shape=(224,224,3), num_classes=y.shape[1])
+    #model = Resnet(input_shape=(224,224,3), num_classes=y.shape[1])
+    model = SE_Resnet(input_shape=(224,224,3), num_classes=y.shape[1])
     gmodel = model.model
 
 
