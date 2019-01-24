@@ -5,7 +5,7 @@ from keras.optimizers import Adam
 from keras.models import Input, Model
 from keras.regularizers import l2
 from keras import backend as K
-
+from keras.metrics import categorical_accuracy, top_k_categorical_accuracy, categorical_crossentropy
 
 class DenseNet():
 
@@ -89,6 +89,9 @@ class DenseNet():
 
         return func
 
+    def top_5_accuracy(self, y_true, y_pred):
+        return top_k_categorical_accuracy(y_true, y_pred, k=5)
+
     def get_DenseNet(self, input_shape, num_classes, dense):
         # Default
         # growth rate: 16
@@ -122,6 +125,6 @@ class DenseNet():
         model = Model(inputs=input, outputs=dense)
 
         optim = Adam(lr=0.001, decay=0.0005)
-        model.compile(loss='categorical_crossentropy', optimizer=optim, metrics=['accuracy'])
+        model.compile(loss='categorical_crossentropy', optimizer=optim, metrics=[categorical_crossentropy, categorical_accuracy, self.top_5_accuracy])
         model.summary()
         return model

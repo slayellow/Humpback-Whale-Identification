@@ -1,9 +1,3 @@
-# 2019/01/21
-# 수정해야할 부분
-# Data Imbalance --> Kernel 보고 수정
-# Model --> Image Classification 모델 구현해서 정리
-# 코드 간결화
-
 import numpy as np
 import pandas as pd
 import os
@@ -13,29 +7,23 @@ from sklearn.preprocessing import OneHotEncoder
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.preprocessing import image
 from keras.applications.imagenet_utils import preprocess_input
-from imageclassifier.Resnet import Resnet
-from imageclassifier.SENet import SE_Resnet
-from imageclassifier.DenseNet import DenseNet
+from imgaeclassifier.Resnet import Resnet
+from imgaeclassifier.SENet import SE_Resnet
+from imgaeclassifier.DenseNet import DenseNet
 
 def prepareImages(data, m, dataset):
-    X_train = np.zeros((m, 224, 224, 3))
+    X_train = np.zeros((m, 100, 100, 3))
     count = 0
-    if dataset == 'test':
-        img = image.load_img("E:/Data/Humpback Whale Identification/" + dataset + "/" + data, target_size=(224, 224, 3))
+    for fig in data['Image']:
+        # load images into images of size 100x100x3
+        img = image.load_img("E:/Data/Humpback Whale Identification/" + dataset + "/" + fig, target_size=(100, 100, 3))
         x = image.img_to_array(img)
         x = preprocess_input(x)
         X_train[count] = x
+        if (count+1) % 1000 ==0:
+            print(count+1,": ",fig)
         count += 1
-        return X_train
-    else:
-        for fig in data:
-            # load images into images of size 100x100x3
-            img = image.load_img("E:/Data/Humpback Whale Identification/" + dataset + "/" + fig, target_size=(224, 224, 3))
-            x = image.img_to_array(img)
-            x = preprocess_input(x)
-            X_train[count] = x
-            count += 1
-        return X_train
+    return X_train
 
 def preprocessing_Label(y):
     values = np.array(y)
@@ -49,25 +37,25 @@ def preprocessing_Label(y):
     y = onehot_encoded
     return y, label_encoder
 
+
 def get_callbacks(filepath, patience=2):
     es = EarlyStopping('loss', patience=patience, mode="min")
     msave = ModelCheckpoint(filepath, monitor='acc', save_best_only=True)
     return [es, msave]
-
+'''
 def batch_generator(X, y, batch_size=16):
-    print('generator initiated')
     count = 0
     while True:
         # choose batch_size random images / labels from the data
         idx = np.random.randint(0, X.shape[0], batch_size)
         X_t = X.loc[idx,'Image']
-        X_train = prepareImages(X_t, X_t.shape[0], 'train')
+        X_train = prepareImages(X_t, X_t.shape[0], 'train/Augment')
         X_train /= 255
         X_train = np.array(X_train)
         label = y[idx]
         yield X_train, label
         count += 1
-
+'''
 def main():
     # input폴더 안의 파일들 확인
     # print(os.listdir('../input'))
@@ -79,12 +67,6 @@ def main():
     img_test_path = os.path.abspath('E:/Data/Humpback Whale Identification/test')
     csv_train_path = os.path.abspath('E:/Data/Humpback Whale Identification/train.csv')
 
-    train_df = pd.read_csv(csv_train_path)
-    train_df['Image_path'] = [os.path.join(img_train_path, whale) for whale in train_df['Image']]
-    y, label_encoder = preprocessing_Label(train_df['Id'])
-
-    train_gen = batch_generator(train_df, y, batch_size=12)
-
 
     file_path = ".model_weight.hdf5"
     callbacks = get_callbacks(file_path, patience=5)
@@ -92,7 +74,7 @@ def main():
     #model = VGG('E', input_shape=(224,224,3), num_classes=y.shape[1])
     #model = Resnet(input_shape=(224,224,3), num_classes=y.shape[1])
     #model = SE_Resnet(input_shape=(224,224,3), num_classes=y.shape[1])
-    model = DenseNet(input_shape=(224,224,3), num_classes=y.shape[1])
+    model = DenseNet(input_shape=(100, 100, 3), num_classes=5005)
     gmodel = model.model
 
 
@@ -101,10 +83,13 @@ def main():
 
                 Input = int(input("You can select number. Training[1] / Test&Save[2] / Exit[3]"))
                 if Input == 1:
-                    history = gmodel.fit_generator(generator=train_gen,
-                           epochs=2,
-                           steps_per_epoch= train_df.shape[0] // 12,
-                                                   verbose=1,
+                    train_df = pd.read_csv(csv_train_path)
+                    y, label_encoder = preprocessing_Label(train_df['Id'])
+                    X = prepareImages(train_df, train_df.shape[0], "train")
+                    # X /= 255     # Why?
+                    history = gmodel.fit(X, y,
+                           epochs=20,
+                           verbose=1,
                            callbacks=callbacks)
                     '''
                     self.model.fit_generator(
@@ -118,31 +103,24 @@ def main():
                         workers          = 3,
                         max_queue_size   = 8)
                   '''
-                    gmodel.load_weights(file_path)
-
-                    plt.plot(history.history['acc'])
-                    plt.title('Model accuracy')
-                    plt.ylabel('Accuracy')
+                    plt.plot(history.history['categorical_accuracy'])
+                    plt.title('Model categorical accuracy')
+                    plt.ylabel('categorical accuracy')
                     plt.xlabel('Epoch')
                     plt.show()
 
                 elif Input == 2:
-                    # Test 과정 --> 수정해야할 부분
-                    predicted_test = []
-                    gmodel.load_weights(file_path)
-                    test = os.listdir(img_test_path)
+                    test = os.listdir(img_test_path+"/")
                     col = ['Image']
                     test_df = pd.DataFrame(test, columns=col)
+                    print(len(test))
                     test_df['Id'] = ''
-                    for image_path in test:
-                        X_test = prepareImages(image_path, 1, 'test')
-                        predicted_test.append(gmodel.predict(np.array(X_test), verbose=1))
-                    predicted_test = np.array(predicted_test)
-                    predicted_test = np.reshape(predicted_test, (predicted_test.shape[0], predicted_test.shape[2]))
-                    # ---------------여기까지
-                    for i, pred in enumerate(predicted_test):
-                        # 각 결과마다 5개의 Label 선택
-                        test_df.loc[i,'Id'] = ' '.join(label_encoder.inverse_transform(pred.argsort()[-5:][::-1]))
+                    X = prepareImages(test_df, test_df.shape[0], "test")
+                    X /= 255
+                    gmodel.load_weights(file_path)
+                    predictions = gmodel.predict(np.array(X), verbose=1)
+                    for i, pred in enumerate(predictions):
+                        test_df.loc[i, 'Id'] = ' '.join(label_encoder.inverse_transform(pred.argsort()[-5:][::-1]))
                     test_df.to_csv('sub.csv', index=False)
                     print('Test Complete')
                 elif Input == 3:
