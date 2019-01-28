@@ -67,7 +67,8 @@ def main():
     img_test_path = os.path.abspath('E:/Data/Humpback Whale Identification/test')
     csv_train_path = os.path.abspath('E:/Data/Humpback Whale Identification/train.csv')
 
-
+    train_df = pd.read_csv(csv_train_path)
+    y, label_encoder = preprocessing_Label(train_df['Id'])
     file_path = ".model_weight.hdf5"
     callbacks = get_callbacks(file_path, patience=5)
     #model = Alexnet(input_shape=(224,224,3), num_classes=y.shape[1])
@@ -83,8 +84,7 @@ def main():
 
                 Input = int(input("You can select number. Training[1] / Test&Save[2] / Exit[3]"))
                 if Input == 1:
-                    train_df = pd.read_csv(csv_train_path)
-                    y, label_encoder = preprocessing_Label(train_df['Id'])
+
                     X = prepareImages(train_df, train_df.shape[0], "train")
                     # X /= 255     # Why?
                     history = gmodel.fit(X, y,
